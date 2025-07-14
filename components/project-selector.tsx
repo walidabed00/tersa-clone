@@ -22,7 +22,7 @@ import {
 import { useUser } from '@/hooks/use-user';
 import { handleError } from '@/lib/error/handle';
 import { cn } from '@/lib/utils';
-import type { projects } from '@/schema';
+import type { Project } from '@prisma/client';
 import Fuse from 'fuse.js';
 import { CheckIcon, PlusIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -37,7 +37,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 
 type ProjectSelectorProps = {
-  projects: (typeof projects.$inferSelect)[];
+  projects: Project[];
   currentProject: string;
 };
 

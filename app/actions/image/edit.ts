@@ -5,14 +5,12 @@ import { database } from '@/lib/database';
 import { parseError } from '@/lib/error/parse';
 import { imageModels } from '@/lib/models/image';
 import { trackCreditUsage } from '@/lib/stripe';
-import { createClient } from '@/lib/supabase/server';
-import { projects } from '@/schema';
+import { uploadFile } from '@/lib/upload';
 import type { Edge, Node, Viewport } from '@xyflow/react';
 import {
   type Experimental_GenerateImageResult,
   experimental_generateImage as generateImage,
 } from 'ai';
-import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import OpenAI, { toFile } from 'openai';
 
@@ -98,7 +96,6 @@ export const editImageAction = async ({
     }
 > => {
   try {
-    const client = await createClient();
     const user = await getSubscribedUser();
 
     const model = imageModels[modelId];
@@ -168,22 +165,13 @@ export const editImageAction = async ({
     const bytes = Buffer.from(image.base64, 'base64');
     const contentType = 'image/png';
 
-    const blob = await client.storage
-      .from('files')
-      .upload(`${user.id}/${nanoid()}`, bytes, {
-        contentType,
-      });
+    const url = await uploadFile(
+      user.id,
+      new File([bytes], `${nanoid()}.png`, { type: contentType })
+    );
 
-    if (blob.error) {
-      throw new Error(blob.error.message);
-    }
-
-    const { data: downloadUrl } = client.storage
-      .from('files')
-      .getPublicUrl(blob.data.path);
-
-    const project = await database.query.projects.findFirst({
-      where: eq(projects.id, projectId),
+    const project = await database.project.findUnique({
+      where: { id: projectId },
     });
 
     if (!project) {
@@ -206,7 +194,7 @@ export const editImageAction = async ({
       ...(existingNode.data ?? {}),
       updatedAt: new Date().toISOString(),
       generated: {
-        url: downloadUrl.publicUrl,
+        url,
         type: contentType,
       },
       description: instructions ?? defaultPrompt,
@@ -223,10 +211,10 @@ export const editImageAction = async ({
       return existingNode;
     });
 
-    await database
-      .update(projects)
-      .set({ content: { ...content, nodes: updatedNodes } })
-      .where(eq(projects.id, projectId));
+    await database.project.update({
+      where: { id: projectId },
+      data: { content: { ...content, nodes: updatedNodes } },
+    });
 
     return {
       nodeData: newData,

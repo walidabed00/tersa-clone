@@ -8,8 +8,6 @@ import { TopRight } from '@/components/top-right';
 import { currentUserProfile } from '@/lib/auth';
 import { database } from '@/lib/database';
 import { ProjectProvider } from '@/providers/project';
-import { projects } from '@/schema';
-import { eq } from 'drizzle-orm';
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
@@ -39,8 +37,8 @@ const Project = async ({ params }: ProjectProps) => {
     return redirect('/welcome');
   }
 
-  const project = await database.query.projects.findFirst({
-    where: eq(projects.id, projectId),
+  const project = await database.project.findUnique({
+    where: { id: projectId },
   });
 
   if (!project) {

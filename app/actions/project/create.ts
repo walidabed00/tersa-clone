@@ -5,7 +5,6 @@ import { database } from '@/lib/database';
 import { parseError } from '@/lib/error/parse';
 import { transcriptionModels } from '@/lib/models/transcription';
 import { visionModels } from '@/lib/models/vision';
-import { projects } from '@/schema';
 
 const defaultTranscriptionModel = Object.entries(transcriptionModels).find(
   ([_, model]) => model.default
@@ -41,22 +40,18 @@ export const createProjectAction = async (
       throw new Error('You need to be logged in to create a project!');
     }
 
-    const project = await database
-      .insert(projects)
-      .values({
+    const project = await database.project.create({
+      data: {
         name,
         userId: user.id,
         transcriptionModel: defaultTranscriptionModel[0],
         visionModel: defaultVisionModel[0],
         welcomeProject,
-      })
-      .returning({ id: projects.id });
+      },
+      select: { id: true },
+    });
 
-    if (!project?.length) {
-      throw new Error('Failed to create project');
-    }
-
-    return { id: project[0].id };
+    return { id: project.id };
   } catch (error) {
     const message = parseError(error);
 

@@ -3,8 +3,6 @@
 import { currentUser } from '@/lib/auth';
 import { database } from '@/lib/database';
 import { parseError } from '@/lib/error/parse';
-import { projects } from '@/schema';
-import { and, eq } from 'drizzle-orm';
 
 export const deleteProjectAction = async (
   projectId: string
@@ -23,11 +21,11 @@ export const deleteProjectAction = async (
       throw new Error('You need to be logged in to delete a project!');
     }
 
-    const project = await database
-      .delete(projects)
-      .where(and(eq(projects.id, projectId), eq(projects.userId, user.id)));
+    const result = await database.project.deleteMany({
+      where: { id: projectId, userId: user.id },
+    });
 
-    if (!project) {
+    if (result.count === 0) {
       throw new Error('Project not found');
     }
 

@@ -4,8 +4,7 @@ import { getSubscribedUser } from '@/lib/auth';
 import { database } from '@/lib/database';
 import { parseError } from '@/lib/error/parse';
 import { visionModels } from '@/lib/models/vision';
-import { projects } from '@/schema';
-import { eq } from 'drizzle-orm';
+
 import OpenAI from 'openai';
 
 export const describeAction = async (
@@ -24,8 +23,8 @@ export const describeAction = async (
 
     const openai = new OpenAI();
 
-    const project = await database.query.projects.findFirst({
-      where: eq(projects.id, projectId),
+    const project = await database.project.findUnique({
+      where: { id: projectId },
     });
 
     if (!project) {

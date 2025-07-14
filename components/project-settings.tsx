@@ -15,7 +15,7 @@ import { handleError } from '@/lib/error/handle';
 import { transcriptionModels } from '@/lib/models/transcription';
 import { visionModels } from '@/lib/models/vision';
 import { useSubscription } from '@/providers/subscription';
-import type { projects } from '@/schema';
+import type { Project } from '@prisma/client';
 import { SettingsIcon, TrashIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { type FormEventHandler, useState } from 'react';
@@ -26,7 +26,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 
 type ProjectSettingsProps = {
-  data: typeof projects.$inferSelect;
+  data: Project;
 };
 
 export const ProjectSettings = ({ data }: ProjectSettingsProps) => {

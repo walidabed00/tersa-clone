@@ -1,8 +1,6 @@
 import { createProjectAction } from '@/app/actions/project/create';
 import { currentUser, currentUserProfile } from '@/lib/auth';
 import { database } from '@/lib/database';
-import { projects } from '@/schema';
-import { eq } from 'drizzle-orm';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
@@ -26,8 +24,8 @@ const Projects = async () => {
     return redirect('/welcome');
   }
 
-  let project = await database.query.projects.findFirst({
-    where: eq(projects.userId, profile.id),
+  let project = await database.project.findFirst({
+    where: { userId: profile.id },
   });
 
   if (!project) {
@@ -37,8 +35,8 @@ const Projects = async () => {
       throw new Error(newProject.error);
     }
 
-    const newFetchedProject = await database.query.projects.findFirst({
-      where: eq(projects.id, newProject.id),
+    const newFetchedProject = await database.project.findUnique({
+      where: { id: newProject.id },
     });
 
     if (!newFetchedProject) {

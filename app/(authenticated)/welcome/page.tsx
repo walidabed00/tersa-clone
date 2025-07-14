@@ -2,8 +2,6 @@ import { createProjectAction } from '@/app/actions/project/create';
 import { currentUser } from '@/lib/auth';
 import { database } from '@/lib/database';
 import { ProjectProvider } from '@/providers/project';
-import { projects } from '@/schema';
-import { and, eq } from 'drizzle-orm';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { WelcomeDemo } from './components/welcome-demo';
@@ -24,8 +22,8 @@ const Welcome = async () => {
     return redirect('/sign-in');
   }
 
-  let welcomeProject = await database.query.projects.findFirst({
-    where: and(eq(projects.userId, user.id), eq(projects.welcomeProject, true)),
+  let welcomeProject = await database.project.findFirst({
+    where: { userId: user.id, welcomeProject: true },
   });
 
   if (!welcomeProject) {
@@ -35,8 +33,8 @@ const Welcome = async () => {
       return <div>Error: {response.error}</div>;
     }
 
-    const project = await database.query.projects.findFirst({
-      where: eq(projects.id, response.id),
+    const project = await database.project.findUnique({
+      where: { id: response.id },
     });
 
     welcomeProject = project;
