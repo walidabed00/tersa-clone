@@ -37,7 +37,7 @@ export const GET = async (request: NextRequest) => {
   const productName = searchParams.get("product");
   const frequency = searchParams.get("frequency");
 
-  const { userId } = auth(); // ✅ safe use of headers() in the right context
+  const { userId } = await auth();
   if (!userId) return redirectToSignIn();
 
   const user = await clerkClient.users.getUser(userId);

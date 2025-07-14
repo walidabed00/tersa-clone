@@ -15,7 +15,7 @@ export const deleteProjectAction = async (
     }
 > => {
   try {
-    const { userId } = auth(); // ✅ safe use of headers() in the right context
+    const { userId } = await auth();
     if (!userId) return redirectToSignIn();
 
     const user = await clerkClient.users.getUser(userId);
