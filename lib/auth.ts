@@ -22,7 +22,7 @@ export const currentUserProfile = async () => {
 };
 
 export const getSubscribedUser = async () => {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Create an account to use AI features.");
 
   const profile = await currentUserProfile();
