@@ -1,62 +1,32 @@
-import { getCredits } from "@/app/actions/credits/get";
-import { profile } from "@/schema";
-import { eq } from "drizzle-orm";
+// lib/auth.ts
 import { database } from "./database";
 import { env } from "./env";
-import { createClient } from "./supabase/server";
-
-export const currentUser = async () => {
-  const client = await createClient();
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-
-  return user;
-};
+import { getCredits } from "@/app/actions/credits/get";
+import { auth } from "@clerk/nextjs/server"; // Use server import
 
 export const currentUserProfile = async () => {
-  const user = await currentUser();
+  const { userId } = await auth();
+  if (!userId) return null;
 
-  if (!user) {
-    throw new Error("User not found");
-  }
+  let userProfile = await database.profile.findUnique({
+    where: { id: userId },
+  });
 
-  const userProfiles = await database
-    .select()
-    .from(profile)
-    .where(eq(profile.id, user.id));
-  let userProfile = userProfiles.at(0);
-
-  if (!userProfile && user.email) {
-    const response = await database
-      .insert(profile)
-      .values({ id: user.id })
-      .onConflictDoNothing()
-      .returning();
-
-    if (!response.length) {
-      throw new Error("Failed to create user profile");
-    }
-
-    userProfile = response[0];
+  if (!userProfile) {
+    userProfile = await database.profile.create({
+      data: { id: userId },
+    });
   }
 
   return userProfile;
 };
 
 export const getSubscribedUser = async () => {
-  const user = await currentUser();
-
-  if (!user) {
-    throw new Error("Create an account to use AI features.");
-  }
+  const { userId } = auth();
+  if (!userId) throw new Error("Create an account to use AI features.");
 
   const profile = await currentUserProfile();
-
-  if (!profile) {
-    throw new Error("User profile not found");
-  }
-
+  if (!profile) throw new Error("User profile not found");
   if (!profile.subscriptionId) {
     throw new Error("Claim your free AI credits to use this feature.");
   }
@@ -76,5 +46,5 @@ export const getSubscribedUser = async () => {
     );
   }
 
-  return user;
+  return profile;
 };

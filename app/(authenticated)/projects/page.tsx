@@ -1,48 +1,47 @@
-import { createProjectAction } from '@/app/actions/project/create';
-import { currentUser, currentUserProfile } from '@/lib/auth';
-import { database } from '@/lib/database';
-import { projects } from '@/schema';
-import { eq } from 'drizzle-orm';
-import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import { createProjectAction } from "@/app/actions/project/create";
+import { currentUserProfile } from "@/lib/auth";
+import { getAuthData } from "@/lib/auth-utils";
+import { database } from "@/lib/database";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: 'Tersa',
-  description: 'Create and share AI workflows',
+  title: "Tersa",
+  description: "Create and share AI workflows",
 };
 
 export const maxDuration = 800; // 13 minutes
 
 const Projects = async () => {
-  const user = await currentUser();
+  const { userId } = await getAuthData(); // Use centralized helper
+  if (!userId) return redirectToSignIn();
 
-  if (!user) {
-    return redirect('/sign-in');
-  }
+  const user = await clerkClient.users.getUser(userId);
 
   const profile = await currentUserProfile();
 
   if (!profile?.onboardedAt) {
-    return redirect('/welcome');
+    return redirect("/welcome");
   }
 
-  let project = await database.query.projects.findFirst({
-    where: eq(projects.userId, profile.id),
+  let project = await database.project.findFirst({
+    where: { userId: profile.id },
   });
 
   if (!project) {
-    const newProject = await createProjectAction('Untitled Project');
+    const newProject = await createProjectAction(userId, "Untitled Project");
 
-    if ('error' in newProject) {
+    if ("error" in newProject) {
       throw new Error(newProject.error);
     }
 
-    const newFetchedProject = await database.query.projects.findFirst({
-      where: eq(projects.id, newProject.id),
+    const newFetchedProject = await database.project.findUnique({
+      where: { id: newProject.id },
     });
 
     if (!newFetchedProject) {
-      throw new Error('Failed to create project');
+      throw new Error("Failed to create project");
     }
 
     project = newFetchedProject;

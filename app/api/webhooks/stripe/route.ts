@@ -2,8 +2,6 @@ import { database } from '@/lib/database';
 import { env } from '@/lib/env';
 import { parseError } from '@/lib/error/parse';
 import { stripe } from '@/lib/stripe';
-import { profile } from '@/schema';
-import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
@@ -63,14 +61,14 @@ export async function POST(req: Request) {
           }
         }
 
-        await database
-          .update(profile)
-          .set({
+        await database.profile.update({
+          where: { id: subscription.metadata.userId },
+          data: {
             customerId,
             subscriptionId: subscription.id,
             productId: subscription.items.data[0]?.price.product as string,
-          })
-          .where(eq(profile.id, subscription.metadata.userId));
+          },
+        });
 
         break;
       }
@@ -81,8 +79,8 @@ export async function POST(req: Request) {
           throw new Error('User ID not found');
         }
 
-        const userProfile = await database.query.profile.findFirst({
-          where: eq(profile.id, subscription.metadata.userId),
+        const userProfile = await database.profile.findUnique({
+          where: { id: subscription.metadata.userId },
         });
 
         if (!userProfile) {
@@ -90,13 +88,10 @@ export async function POST(req: Request) {
         }
 
         if (userProfile.subscriptionId === subscription.id) {
-          await database
-            .update(profile)
-            .set({
-              subscriptionId: null,
-              productId: null,
-            })
-            .where(eq(profile.id, subscription.metadata.userId));
+          await database.profile.update({
+            where: { id: subscription.metadata.userId },
+            data: { subscriptionId: null, productId: null },
+          });
         }
 
         break;

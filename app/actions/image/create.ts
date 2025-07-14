@@ -6,14 +6,12 @@ import { parseError } from '@/lib/error/parse';
 import { imageModels } from '@/lib/models/image';
 import { visionModels } from '@/lib/models/vision';
 import { trackCreditUsage } from '@/lib/stripe';
-import { createClient } from '@/lib/supabase/server';
-import { projects } from '@/schema';
+import { uploadFile } from '@/lib/upload';
 import type { Edge, Node, Viewport } from '@xyflow/react';
 import {
   type Experimental_GenerateImageResult,
   experimental_generateImage as generateImage,
 } from 'ai';
-import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import OpenAI from 'openai';
 
@@ -97,7 +95,6 @@ export const generateImageAction = async ({
     }
 > => {
   try {
-    const client = await createClient();
     const user = await getSubscribedUser();
     const model = imageModels[modelId];
 
@@ -170,27 +167,10 @@ export const generateImageAction = async ({
       type: image.mimeType,
     });
 
-    const blob = await client.storage
-      .from('files')
-      .upload(`${user.id}/${name}`, file, {
-        contentType: file.type,
-      });
+    const url = await uploadFile(user.id, file);
 
-    if (blob.error) {
-      throw new Error(blob.error.message);
-    }
-
-    const { data: downloadUrl } = client.storage
-      .from('files')
-      .getPublicUrl(blob.data.path);
-
-    const url =
-      process.env.NODE_ENV === 'production'
-        ? downloadUrl.publicUrl
-        : `data:${image.mimeType};base64,${Buffer.from(image.uint8Array).toString('base64')}`;
-
-    const project = await database.query.projects.findFirst({
-      where: eq(projects.id, projectId),
+    const project = await database.project.findUnique({
+      where: { id: projectId },
     });
 
     if (!project) {
@@ -261,10 +241,10 @@ export const generateImageAction = async ({
       return existingNode;
     });
 
-    await database
-      .update(projects)
-      .set({ content: { ...content, nodes: updatedNodes } })
-      .where(eq(projects.id, projectId));
+    await database.project.update({
+      where: { id: projectId },
+      data: { content: { ...content, nodes: updatedNodes } },
+    });
 
     return {
       nodeData: newData,

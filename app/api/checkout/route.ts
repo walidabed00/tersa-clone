@@ -1,11 +1,12 @@
-import { currentUser, currentUserProfile } from '@/lib/auth';
-import { env } from '@/lib/env';
-import { parseError } from '@/lib/error/parse';
-import { stripe } from '@/lib/stripe';
-import { type NextRequest, NextResponse } from 'next/server';
-import type Stripe from 'stripe';
+import { currentUserProfile } from "@/lib/auth";
+import { env } from "@/lib/env";
+import { parseError } from "@/lib/error/parse";
+import { stripe } from "@/lib/stripe";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
+import { type NextRequest, NextResponse } from "next/server";
+import type Stripe from "stripe";
 
-const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
 const successUrl = `${protocol}://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
 
 const getFrequencyPrice = async (
@@ -17,7 +18,7 @@ const getFrequencyPrice = async (
   });
 
   if (prices.data.length === 0) {
-    throw new Error('Product prices not found');
+    throw new Error("Product prices not found");
   }
 
   const price = prices.data.find(
@@ -25,7 +26,7 @@ const getFrequencyPrice = async (
   );
 
   if (!price) {
-    throw new Error('Price not found');
+    throw new Error("Price not found");
   }
 
   return price.id;
@@ -33,49 +34,52 @@ const getFrequencyPrice = async (
 
 export const GET = async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
-  const productName = searchParams.get('product');
-  const frequency = searchParams.get('frequency');
+  const productName = searchParams.get("product");
+  const frequency = searchParams.get("frequency");
 
-  const user = await currentUser();
+  const { userId } = auth(); // ✅ safe use of headers() in the right context
+  if (!userId) return redirectToSignIn();
+
+  const user = await clerkClient.users.getUser(userId);
 
   if (!user) {
-    return new Response('You must be logged in to subscribe', { status: 401 });
+    return new Response("You must be logged in to subscribe", { status: 401 });
   }
 
-  if (typeof productName !== 'string') {
-    return new Response('Missing product', { status: 400 });
+  if (typeof productName !== "string") {
+    return new Response("Missing product", { status: 400 });
   }
 
-  if (typeof frequency !== 'string') {
-    return new Response('Missing frequency', { status: 400 });
+  if (typeof frequency !== "string") {
+    return new Response("Missing frequency", { status: 400 });
   }
 
-  if (frequency !== 'month' && frequency !== 'year') {
-    return new Response('Invalid frequency', { status: 400 });
+  if (frequency !== "month" && frequency !== "year") {
+    return new Response("Invalid frequency", { status: 400 });
   }
 
   const profile = await currentUserProfile();
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
   if (!profile) {
-    return new Response('Profile not found', { status: 404 });
+    return new Response("Profile not found", { status: 404 });
   }
 
-  if (!profile.customerId && !user.email) {
-    return new Response('Customer ID or email not found', { status: 400 });
+  if (!profile.customerId && !user.emailAddresses.length) {
+    return new Response("Customer ID or email not found", { status: 400 });
   }
 
-  if (productName === 'hobby') {
+  if (productName === "hobby") {
     lineItems.push(
       {
-        price: await getFrequencyPrice(env.STRIPE_HOBBY_PRODUCT_ID, 'month'),
+        price: await getFrequencyPrice(env.STRIPE_HOBBY_PRODUCT_ID, "month"),
         quantity: 1,
       },
       {
-        price: await getFrequencyPrice(env.STRIPE_USAGE_PRODUCT_ID, 'month'),
+        price: await getFrequencyPrice(env.STRIPE_USAGE_PRODUCT_ID, "month"),
       }
     );
-  } else if (productName === 'pro') {
+  } else if (productName === "pro") {
     lineItems.push(
       {
         price: await getFrequencyPrice(env.STRIPE_PRO_PRODUCT_ID, frequency),
@@ -90,13 +94,15 @@ export const GET = async (request: NextRequest) => {
   try {
     const checkoutLink = await stripe.checkout.sessions.create({
       customer: profile.customerId ?? undefined,
-      customer_email: profile.customerId ? undefined : user.email,
+      customer_email: profile.customerId
+        ? undefined
+        : user.emailAddresses[0].emailAddress,
       line_items: lineItems,
       success_url: successUrl,
       allow_promotion_codes: true,
-      mode: 'subscription',
+      mode: "subscription",
       payment_method_collection:
-        productName === 'hobby' ? 'if_required' : 'always',
+        productName === "hobby" ? "if_required" : "always",
       subscription_data: {
         metadata: {
           userId: user.id,
@@ -105,7 +111,7 @@ export const GET = async (request: NextRequest) => {
     });
 
     if (!checkoutLink.url) {
-      throw new Error('Checkout link not found');
+      throw new Error("Checkout link not found");
     }
 
     return NextResponse.redirect(checkoutLink.url);

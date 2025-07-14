@@ -1,10 +1,10 @@
 'use client';
 
-import type { projects } from '@/schema';
+import type { Project } from '@prisma/client';
 import { type ReactNode, createContext, useContext } from 'react';
 
 type ProjectContextType = {
-  project: typeof projects.$inferSelect | null;
+  project: Project | null;
 };
 
 export const ProjectContext = createContext<ProjectContextType>({
@@ -26,7 +26,7 @@ export const ProjectProvider = ({
   data,
 }: {
   children: ReactNode;
-  data: typeof projects.$inferSelect;
+  data: Project;
 }) => (
   <ProjectContext.Provider value={{ project: data }}>
     {children}

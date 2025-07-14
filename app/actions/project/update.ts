@@ -1,14 +1,13 @@
-'use server';
+"use server";
 
-import { currentUser } from '@/lib/auth';
-import { database } from '@/lib/database';
-import { parseError } from '@/lib/error/parse';
-import { projects } from '@/schema';
-import { and, eq } from 'drizzle-orm';
+import { database } from "@/lib/database";
+import { parseError } from "@/lib/error/parse";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
+import type { Prisma } from "@prisma/client";
 
 export const updateProjectAction = async (
   projectId: string,
-  data: Partial<typeof projects.$inferInsert>
+  data: Prisma.ProjectUpdateInput
 ): Promise<
   | {
       success: true;
@@ -18,22 +17,21 @@ export const updateProjectAction = async (
     }
 > => {
   try {
-    const user = await currentUser();
+    const { userId } = auth(); // ✅ safe use of headers() in the right context
+    if (!userId) return redirectToSignIn();
 
+    const user = await clerkClient.users.getUser(userId);
     if (!user) {
-      throw new Error('You need to be logged in to update a project!');
+      throw new Error("You need to be logged in to update a project!");
     }
 
-    const project = await database
-      .update(projects)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(projects.id, projectId), eq(projects.userId, user.id)));
+    const result = await database.project.updateMany({
+      where: { id: projectId, userId: user.id },
+      data: { ...data, updatedAt: new Date() },
+    });
 
-    if (!project) {
-      throw new Error('Project not found');
+    if (result.count === 0) {
+      throw new Error("Project not found");
     }
 
     return { success: true };

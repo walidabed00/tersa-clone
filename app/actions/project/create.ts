@@ -1,11 +1,9 @@
-'use server';
+"use server";
 
-import { currentUser } from '@/lib/auth';
-import { database } from '@/lib/database';
-import { parseError } from '@/lib/error/parse';
-import { transcriptionModels } from '@/lib/models/transcription';
-import { visionModels } from '@/lib/models/vision';
-import { projects } from '@/schema';
+import { database } from "@/lib/database";
+import { parseError } from "@/lib/error/parse";
+import { transcriptionModels } from "@/lib/models/transcription";
+import { visionModels } from "@/lib/models/vision";
 
 const defaultTranscriptionModel = Object.entries(transcriptionModels).find(
   ([_, model]) => model.default
@@ -16,14 +14,15 @@ const defaultVisionModel = Object.entries(visionModels).find(
 );
 
 if (!defaultTranscriptionModel) {
-  throw new Error('No default transcription model found');
+  throw new Error("No default transcription model found");
 }
 
 if (!defaultVisionModel) {
-  throw new Error('No default vision model found');
+  throw new Error("No default vision model found");
 }
 
 export const createProjectAction = async (
+  userId: string,
   name: string,
   welcomeProject?: boolean
 ): Promise<
@@ -35,28 +34,18 @@ export const createProjectAction = async (
     }
 > => {
   try {
-    const user = await currentUser();
-
-    if (!user) {
-      throw new Error('You need to be logged in to create a project!');
-    }
-
-    const project = await database
-      .insert(projects)
-      .values({
+    const project = await database.project.create({
+      data: {
         name,
-        userId: user.id,
+        userId,
         transcriptionModel: defaultTranscriptionModel[0],
         visionModel: defaultVisionModel[0],
         welcomeProject,
-      })
-      .returning({ id: projects.id });
+      },
+      select: { id: true },
+    });
 
-    if (!project?.length) {
-      throw new Error('Failed to create project');
-    }
-
-    return { id: project[0].id };
+    return { id: project.id };
   } catch (error) {
     const message = parseError(error);
 

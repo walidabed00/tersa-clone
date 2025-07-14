@@ -1,7 +1,5 @@
 import { currentUserProfile } from '@/lib/auth';
 import { database } from '@/lib/database';
-import { projects } from '@/schema';
-import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { CreditCounter } from './credits-counter';
@@ -14,8 +12,8 @@ type TopRightProps = {
 
 export const TopRight = async ({ id }: TopRightProps) => {
   const profile = await currentUserProfile();
-  const project = await database.query.projects.findFirst({
-    where: eq(projects.id, id),
+  const project = await database.project.findUnique({
+    where: { id },
   });
 
   if (!profile || !project) {

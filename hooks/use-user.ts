@@ -1,22 +1,6 @@
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
+import { useUser as useClerkUser } from '@clerk/nextjs';
 
 export const useUser = () => {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await createClient().auth.getUser();
-      if (error) {
-        console.error(error);
-      }
-
-      setUser(data.user);
-    };
-
-    fetchUser();
-  }, []);
-
+  const { user } = useClerkUser();
   return user;
 };

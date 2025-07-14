@@ -1,23 +1,16 @@
-import * as schema from '@/schema';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import { env } from './env';
+import { PrismaClient } from '@prisma/client';
 
 declare global {
-  var postgresSqlClient: ReturnType<typeof postgres> | undefined;
+  // eslint-disable-next-line no-var
+  var prisma: PrismaClient | undefined;
 }
 
-let client: ReturnType<typeof postgres> | undefined;
+export const database =
+  global.prisma ||
+  new PrismaClient({
+    log: ['query', 'error', 'warn'],
+  });
 
 if (process.env.NODE_ENV !== 'production') {
-  if (!global.postgresSqlClient) {
-    // Disable prefetch as it is not supported for "Transaction" pool mode
-    global.postgresSqlClient = postgres(env.POSTGRES_URL, { prepare: false });
-  }
-  client = global.postgresSqlClient;
-} else {
-  // Disable prefetch as it is not supported for "Transaction" pool mode
-  client = postgres(env.POSTGRES_URL, { prepare: false });
+  global.prisma = database;
 }
-
-export const database = drizzle({ client, schema });

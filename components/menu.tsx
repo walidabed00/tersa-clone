@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useUser } from '@/hooks/use-user';
-import { createClient } from '@/lib/supabase/client';
+import { useClerk } from '@clerk/nextjs';
 import { useSubscription } from '@/providers/subscription';
 import { ArrowUpRight, ArrowUpRightIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -26,9 +26,9 @@ export const Menu = () => {
   const user = useUser();
   const { isSubscribed } = useSubscription();
 
+  const { signOut } = useClerk();
   const logout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut();
     router.push('/auth/login');
   };
 

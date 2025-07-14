@@ -5,6 +5,7 @@ import { mono, sans, serif } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { PostHogProvider } from '@/providers/posthog-provider';
 import { ThemeProvider } from '@/providers/theme';
+import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/next';
 import type { ReactNode } from 'react';
 
@@ -22,18 +23,20 @@ const RootLayout = ({ children }: RootLayoutProps) => (
         'bg-background text-foreground antialiased'
       )}
     >
-      <PostHogProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster className="z-[99999999]" />
-        </ThemeProvider>
-        <Analytics />
-      </PostHogProvider>
+      <ClerkProvider>
+        <PostHogProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TooltipProvider>{children}</TooltipProvider>
+            <Toaster className="z-[99999999]" />
+          </ThemeProvider>
+          <Analytics />
+        </PostHogProvider>
+      </ClerkProvider>
     </body>
   </html>
 );

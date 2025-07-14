@@ -1,10 +1,13 @@
-import { Logo } from '@/components/logo';
-import { Button } from '@/components/ui/button';
-import { currentUser } from '@/lib/auth';
-import Link from 'next/link';
+import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
+import Link from "next/link";
 
 export const Header = async () => {
-  const user = await currentUser();
+  const { userId } = auth(); // ✅ safe use of headers() in the right context
+  if (!userId) return redirectToSignIn();
+
+  const user = await clerkClient.users.getUser(userId);
 
   return (
     <header className="flex items-center justify-between px-8">

@@ -5,11 +5,9 @@ import { database } from '@/lib/database';
 import { parseError } from '@/lib/error/parse';
 import { speechModels } from '@/lib/models/speech';
 import { trackCreditUsage } from '@/lib/stripe';
-import { createClient } from '@/lib/supabase/server';
-import { projects } from '@/schema';
+
 import type { Edge, Node, Viewport } from '@xyflow/react';
 import { experimental_generateSpeech as generateSpeech } from 'ai';
-import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 type GenerateSpeechActionProps = {
@@ -37,7 +35,6 @@ export const generateSpeechAction = async ({
     }
 > => {
   try {
-    const client = await createClient();
     const user = await getSubscribedUser();
 
     const model = speechModels[modelId];
@@ -61,22 +58,10 @@ export const generateSpeechAction = async ({
       cost: provider.getCost(text.length),
     });
 
-    const blob = await client.storage
-      .from('files')
-      .upload(`${user.id}/${nanoid()}.mp3`, new Blob([audio.uint8Array]), {
-        contentType: audio.mimeType,
-      });
+    const downloadUrl = { publicUrl: 'todo' } as const;
 
-    if (blob.error) {
-      throw new Error(blob.error.message);
-    }
-
-    const { data: downloadUrl } = client.storage
-      .from('files')
-      .getPublicUrl(blob.data.path);
-
-    const project = await database.query.projects.findFirst({
-      where: eq(projects.id, projectId),
+    const project = await database.project.findUnique({
+      where: { id: projectId },
     });
 
     if (!project) {
@@ -115,10 +100,10 @@ export const generateSpeechAction = async ({
       return existingNode;
     });
 
-    await database
-      .update(projects)
-      .set({ content: { ...content, nodes: updatedNodes } })
-      .where(eq(projects.id, projectId));
+    await database.project.update({
+      where: { id: projectId },
+      data: { content: { ...content, nodes: updatedNodes } },
+    });
 
     return {
       nodeData: newData,
