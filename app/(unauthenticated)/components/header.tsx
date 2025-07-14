@@ -4,7 +4,7 @@ import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
 import Link from "next/link";
 
 export const Header = async () => {
-  const { userId } = auth(); // ✅ safe use of headers() in the right context
+  const { userId } = await auth(); // ✅ safe use of headers() in the right context
   if (!userId) return redirectToSignIn();
 
   const user = await clerkClient.users.getUser(userId);
