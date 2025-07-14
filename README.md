@@ -47,7 +47,7 @@ A visual AI playground. Tersa is an open source canvas for building AI workflows
    pnpm install
    ```
 
-3. Create a `.env.local` file in the root directory with your environment variables. Check the `lib/env.ts` file for all the variables you need to set.
+3. Create a `.env.local` file in the root directory with your environment variables. Check the `lib/env.ts` file for all the variables you need to set. At minimum you need `CLERK_PUBLIC_KEY` and `CLERK_SECRET_KEY` for authentication.
 
 4. Run the development server
    ```sh
