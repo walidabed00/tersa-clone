@@ -6,7 +6,7 @@ import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
 import type { Prisma } from "@prisma/client";
 
 export const updateProfileAction = async (
-  userId: string,
+  id: string,
   data: Prisma.ProfileUpdateInput
 ): Promise<
   | {
@@ -17,17 +17,17 @@ export const updateProfileAction = async (
     }
 > => {
   try {
-    const { userId } = await auth();
-    if (!userId) return redirectToSignIn();
+    const { userId: authUserId } = await auth();
+    if (!authUserId) return redirectToSignIn();
 
-    const user = await clerkClient.users.getUser(userId);
+    const user = await clerkClient.users.getUser(authUserId);
 
     if (!user) {
       throw new Error("You need to be logged in to update your profile!");
     }
 
     await database.profile.update({
-      where: { id: userId },
+      where: { id },
       data,
     });
 

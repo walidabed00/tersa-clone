@@ -4,7 +4,7 @@ import { ProjectProvider } from "@/providers/project";
 import type { Metadata } from "next";
 import { WelcomeDemo } from "./components/welcome-demo";
 import { getAuthData } from "@/lib/auth-utils";
-import { redirectToSignIn } from "@clerk/nextjs";
+import { redirectToSignIn } from "@clerk/nextjs/server";
 
 const title = "Welcome to Tersa!";
 const description =

@@ -2,7 +2,7 @@ import { createProjectAction } from "@/app/actions/project/create";
 import { currentUserProfile } from "@/lib/auth";
 import { getAuthData } from "@/lib/auth-utils";
 import { database } from "@/lib/database";
-import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
+import { clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
