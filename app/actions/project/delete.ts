@@ -1,8 +1,8 @@
-'use server';
+"use server";
 
-import { currentUser } from '@/lib/auth';
-import { database } from '@/lib/database';
-import { parseError } from '@/lib/error/parse';
+import { database } from "@/lib/database";
+import { parseError } from "@/lib/error/parse";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
 
 export const deleteProjectAction = async (
   projectId: string
@@ -15,10 +15,13 @@ export const deleteProjectAction = async (
     }
 > => {
   try {
-    const user = await currentUser();
+    const { userId } = auth(); // ✅ safe use of headers() in the right context
+    if (!userId) return redirectToSignIn();
+
+    const user = await clerkClient.users.getUser(userId);
 
     if (!user) {
-      throw new Error('You need to be logged in to delete a project!');
+      throw new Error("You need to be logged in to delete a project!");
     }
 
     const result = await database.project.deleteMany({
@@ -26,7 +29,7 @@ export const deleteProjectAction = async (
     });
 
     if (result.count === 0) {
-      throw new Error('Project not found');
+      throw new Error("Project not found");
     }
 
     return { success: true };

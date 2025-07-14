@@ -1,14 +1,17 @@
-import { currentUser } from '@/lib/auth';
-import { database } from '@/lib/database';
-import { ProjectSelector } from './project-selector';
-import { ProjectSettings } from './project-settings';
+import { database } from "@/lib/database";
+import { ProjectSelector } from "./project-selector";
+import { ProjectSettings } from "./project-settings";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
 
 type TopLeftProps = {
   id: string;
 };
 
 export const TopLeft = async ({ id }: TopLeftProps) => {
-  const user = await currentUser();
+  const { userId } = auth(); // ✅ safe use of headers() in the right context
+  if (!userId) return redirectToSignIn();
+
+  const user = await clerkClient.users.getUser(userId);
 
   if (!user) {
     return null;

@@ -56,7 +56,7 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_HOST: z.string().url().min(1),
 
     // Clerk
-    CLERK_PUBLIC_KEY: z.string().min(1),
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
   },
   runtimeEnv: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
@@ -73,7 +73,7 @@ export const env = createEnv({
     COHERE_API_KEY: process.env.COHERE_API_KEY,
     MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
     DATABASE_URL: process.env.DATABASE_URL,
-    CLERK_PUBLIC_KEY: process.env.CLERK_PUBLIC_KEY,
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
     MINIMAX_GROUP_ID: process.env.MINIMAX_GROUP_ID,
     MINIMAX_API_KEY: process.env.MINIMAX_API_KEY,

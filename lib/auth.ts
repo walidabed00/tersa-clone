@@ -1,26 +1,20 @@
-import { getCredits } from "@/app/actions/credits/get";
+// lib/auth.ts
 import { database } from "./database";
 import { env } from "./env";
-import { currentUser as clerkCurrentUser } from "@clerk/nextjs/server";
-
-export const currentUser = async () => {
-  return await clerkCurrentUser();
-};
+import { getCredits } from "@/app/actions/credits/get";
+import { auth } from "@clerk/nextjs/server"; // Use server import
 
 export const currentUserProfile = async () => {
-  const user = await currentUser();
-
-  if (!user) {
-    throw new Error("User not found");
-  }
+  const { userId } = await auth();
+  if (!userId) return null;
 
   let userProfile = await database.profile.findUnique({
-    where: { id: user.id },
+    where: { id: userId },
   });
 
-  if (!userProfile && user.email) {
+  if (!userProfile) {
     userProfile = await database.profile.create({
-      data: { id: user.id },
+      data: { id: userId },
     });
   }
 
@@ -28,18 +22,11 @@ export const currentUserProfile = async () => {
 };
 
 export const getSubscribedUser = async () => {
-  const user = await currentUser();
-
-  if (!user) {
-    throw new Error("Create an account to use AI features.");
-  }
+  const { userId } = auth();
+  if (!userId) throw new Error("Create an account to use AI features.");
 
   const profile = await currentUserProfile();
-
-  if (!profile) {
-    throw new Error("User profile not found");
-  }
-
+  if (!profile) throw new Error("User profile not found");
   if (!profile.subscriptionId) {
     throw new Error("Claim your free AI credits to use this feature.");
   }
@@ -59,5 +46,5 @@ export const getSubscribedUser = async () => {
     );
   }
 
-  return user;
+  return profile;
 };

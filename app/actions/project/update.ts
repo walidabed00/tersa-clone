@@ -1,9 +1,9 @@
-'use server';
+"use server";
 
-import { currentUser } from '@/lib/auth';
-import { database } from '@/lib/database';
-import { parseError } from '@/lib/error/parse';
-import type { Prisma } from '@prisma/client';
+import { database } from "@/lib/database";
+import { parseError } from "@/lib/error/parse";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
+import type { Prisma } from "@prisma/client";
 
 export const updateProjectAction = async (
   projectId: string,
@@ -17,10 +17,12 @@ export const updateProjectAction = async (
     }
 > => {
   try {
-    const user = await currentUser();
+    const { userId } = auth(); // ✅ safe use of headers() in the right context
+    if (!userId) return redirectToSignIn();
 
+    const user = await clerkClient.users.getUser(userId);
     if (!user) {
-      throw new Error('You need to be logged in to update a project!');
+      throw new Error("You need to be logged in to update a project!");
     }
 
     const result = await database.project.updateMany({
@@ -29,7 +31,7 @@ export const updateProjectAction = async (
     });
 
     if (result.count === 0) {
-      throw new Error('Project not found');
+      throw new Error("Project not found");
     }
 
     return { success: true };

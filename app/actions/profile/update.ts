@@ -1,9 +1,9 @@
-'use server';
+"use server";
 
-import { currentUser } from '@/lib/auth';
-import { database } from '@/lib/database';
-import { parseError } from '@/lib/error/parse';
-import type { Prisma } from '@prisma/client';
+import { database } from "@/lib/database";
+import { parseError } from "@/lib/error/parse";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
+import type { Prisma } from "@prisma/client";
 
 export const updateProfileAction = async (
   userId: string,
@@ -17,10 +17,13 @@ export const updateProfileAction = async (
     }
 > => {
   try {
-    const user = await currentUser();
+    const { userId } = auth(); // ✅ safe use of headers() in the right context
+    if (!userId) return redirectToSignIn();
+
+    const user = await clerkClient.users.getUser(userId);
 
     if (!user) {
-      throw new Error('You need to be logged in to update your profile!');
+      throw new Error("You need to be logged in to update your profile!");
     }
 
     await database.profile.update({

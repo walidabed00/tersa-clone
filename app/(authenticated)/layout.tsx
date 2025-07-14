@@ -1,24 +1,24 @@
-import { currentUser, currentUserProfile } from '@/lib/auth';
-import { env } from '@/lib/env';
-import { PostHogIdentifyProvider } from '@/providers/posthog-provider';
+import { currentUserProfile } from "@/lib/auth";
+import { env } from "@/lib/env";
+import { PostHogIdentifyProvider } from "@/providers/posthog-provider";
 import {
   type SubscriptionContextType,
   SubscriptionProvider,
-} from '@/providers/subscription';
-import { ReactFlowProvider } from '@xyflow/react';
-import { redirect } from 'next/navigation';
-import type { ReactNode } from 'react';
+} from "@/providers/subscription";
+import { auth, clerkClient, redirectToSignIn } from "@clerk/nextjs/server";
+import { ReactFlowProvider } from "@xyflow/react";
+import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 
 type AuthenticatedLayoutProps = {
   children: ReactNode;
 };
 
 const AuthenticatedLayout = async ({ children }: AuthenticatedLayoutProps) => {
-  const user = await currentUser();
+  const { userId } = auth(); // ✅ safe use of headers() in the right context
+  if (!userId) return redirectToSignIn();
 
-  if (!user) {
-    redirect('/auth/login');
-  }
+  const user = await clerkClient.users.getUser(userId);
 
   const profile = await currentUserProfile();
 
@@ -26,12 +26,12 @@ const AuthenticatedLayout = async ({ children }: AuthenticatedLayoutProps) => {
     return null;
   }
 
-  let plan: SubscriptionContextType['plan'];
+  let plan: SubscriptionContextType["plan"];
 
   if (profile.productId === env.STRIPE_HOBBY_PRODUCT_ID) {
-    plan = 'hobby';
+    plan = "hobby";
   } else if (profile.productId === env.STRIPE_PRO_PRODUCT_ID) {
-    plan = 'pro';
+    plan = "pro";
   }
 
   return (
