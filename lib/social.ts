@@ -1,19 +1,19 @@
 import { SiGithub, SiX } from '@icons-pack/react-simple-icons';
-import type { Provider } from '@supabase/supabase-js';
+import type { OAuthStrategy } from '@clerk/nextjs';
 
 export const socialProviders: {
   name: string;
   icon: typeof SiGithub;
-  id: Provider;
+  id: OAuthStrategy;
 }[] = [
   {
     name: 'Github',
     icon: SiGithub,
-    id: 'github',
+    id: 'oauth_github',
   },
   {
     name: 'Twitter',
     icon: SiX,
-    id: 'twitter',
+    id: 'oauth_twitter',
   },
 ];

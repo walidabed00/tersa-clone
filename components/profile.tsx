@@ -6,9 +6,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { handleError } from '@/lib/error/handle';
-import { createClient } from '@/lib/supabase/client';
 import { uploadFile } from '@/lib/upload';
-import type { UserAttributes } from '@supabase/supabase-js';
+import { useUser } from '@clerk/nextjs';
 import { Loader2Icon } from 'lucide-react';
 import Image from 'next/image';
 import { type FormEventHandler, useEffect, useState } from 'react';
@@ -28,6 +27,7 @@ type ProfileProps = {
 };
 
 export const Profile = ({ open, setOpen }: ProfileProps) => {
+  const { user } = useUser();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [image, setImage] = useState('');
@@ -35,29 +35,11 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
   const [password, setPassword] = useState('');
 
   useEffect(() => {
-    const loadProfile = async () => {
-      const client = createClient();
-      const { data } = await client.auth.getUser();
-
-      if (!data.user) {
-        return;
-      }
-
-      if (data.user.user_metadata.name) {
-        setName(data.user.user_metadata.name);
-      }
-
-      if (data.user.email) {
-        setEmail(data.user.email);
-      }
-
-      if (data.user.user_metadata.avatar) {
-        setImage(data.user.user_metadata.avatar);
-      }
-    };
-
-    loadProfile();
-  }, []);
+    if (!user) return;
+    if (user.fullName) setName(user.fullName);
+    if (user.primaryEmailAddress) setEmail(user.primaryEmailAddress.emailAddress);
+    if (user.imageUrl) setImage(user.imageUrl);
+  }, [user]);
 
   const handleUpdateUser: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
@@ -69,32 +51,13 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
     setIsUpdating(true);
 
     try {
-      const client = createClient();
+      if (!user) throw new Error('Not authenticated');
 
-      const attributes: UserAttributes = {
-        data: {},
-      };
-
-      if (name.trim()) {
-        attributes.data = {
-          ...attributes.data,
-          name,
-        };
-      }
-
-      if (email.trim()) {
-        attributes.email = email;
-      }
-
-      if (password.trim()) {
-        attributes.password = password;
-      }
-
-      const response = await client.auth.updateUser(attributes);
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
+      await user.update({
+        emailAddress: email.trim() || undefined,
+        password: password.trim() || undefined,
+        unsafeMetadata: { name },
+      });
 
       toast.success('Profile updated successfully');
       setOpen(false);
@@ -118,17 +81,8 @@ export const Profile = ({ open, setOpen }: ProfileProps) => {
       setIsUpdating(true);
 
       const { url } = await uploadFile(files[0], 'avatars');
-      const client = createClient();
-
-      const response = await client.auth.updateUser({
-        data: {
-          avatar: url,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
+      if (!user) throw new Error('Not authenticated');
+      await user.update({ unsafeMetadata: { avatar: url } });
 
       toast.success('Avatar updated successfully');
       setImage(url);

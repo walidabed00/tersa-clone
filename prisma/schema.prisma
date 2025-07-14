@@ -1,0 +1,34 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Project {
+  id                 String   @id @default(uuid())
+  name               String
+  transcriptionModel String   @map("transcription_model")
+  visionModel        String   @map("vision_model")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime? @map("updated_at")
+  content            Json?
+  userId             String   @map("user_id")
+  image              String?
+  members            String[]
+  welcomeProject     Boolean  @default(false) @map("demo_project")
+
+  @@map("project")
+}
+
+model Profile {
+  id             String   @id
+  customerId     String?  @map("customer_id")
+  subscriptionId String?  @map("subscription_id")
+  productId      String?  @map("product_id")
+  onboardedAt    DateTime? @map("onboarded_at")
+
+  @@map("profile")
+}

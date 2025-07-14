@@ -3,35 +3,25 @@
 import { Button } from '@/components/ui/button';
 import { handleError } from '@/lib/error/handle';
 import { socialProviders } from '@/lib/social';
-import { createClient } from '@/lib/supabase/client';
-import type { Provider } from '@supabase/supabase-js';
+import { useSignIn, type OAuthStrategy } from '@clerk/nextjs';
 import { useState } from 'react';
 
 export const SocialAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSocialLogin = async (provider: Provider) => {
-    const supabase = createClient();
+  const { signIn, isLoaded } = useSignIn();
+
+  const handleSocialLogin = async (provider: OAuthStrategy) => {
+    if (!isLoaded) return;
     setIsLoading(true);
-
-    const redirectUrl = new URL('/auth/oauth', window.location.origin);
-
-    redirectUrl.searchParams.set('next', '/');
-
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: redirectUrl.toString(),
-        },
+      await signIn?.authenticateWithRedirect({
+        strategy: provider,
+        redirectUrl: '/auth/oauth',
+        redirectUrlComplete: '/',
       });
-
-      if (error) {
-        throw error;
-      }
     } catch (error: unknown) {
       handleError('Error logging in with social provider', error);
-
       setIsLoading(false);
     }
   };
