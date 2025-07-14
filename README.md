@@ -17,6 +17,11 @@ A visual AI playground. Tersa is an open source canvas for building AI workflows
 
 - [Next.js 15](https://nextjs.org/) with App Router and Turbopack
 - [React 19](https://react.dev/)
+## Repository Structure
+
+- `frontend/` - Vite + React app
+- `backend/` - NestJS API server
+
 - [Clerk](https://clerk.com/) for authentication
 - [Prisma](https://www.prisma.io/) for database queries
 - [Vercel AI SDK](https://sdk.vercel.ai/) for AI model integration
